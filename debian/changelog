@@ -1,0 +1,236 @@
+pdfarranger (1.8.2-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream version 1.8.2
+
+ -- Dr. Tobias Quathamer <toddy@debian.org>  Sun, 09 Jan 2022 16:33:59 +0100
+
+pdfarranger (1.8.0-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream version 1.8.0. Closes: #984830
+    - Remove patch, has been applied upstream
+  * Update d/watch to renamed upstream repository. Closes: #996393
+  * Update d/copyright and metadata to renamed upstream repository.
+    Closes: #996393
+  * Update d/control with upstream's new homepage
+  * Update Standards-Version to 4.6.0, no changes needed
+  * Drop transitional package pdfshuffler, has been part of two
+    stable releases
+  * Drop unnecessary package install files after removal of
+    transitional package
+
+ -- Dr. Tobias Quathamer <toddy@debian.org>  Sat, 13 Nov 2021 21:45:09 +0100
+
+pdfarranger (1.6.2-3) unstable; urgency=medium
+
+  * Add patch to fix editing PDFs with old pikepdf version (LP: #1926289)
+
+ -- Jeremy Bicha <jbicha@debian.org>  Sun, 26 Sep 2021 21:21:43 -0400
+
+pdfarranger (1.6.2-2) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * d/control: Update Maintainer field with new Debian Python Team
+    contact address.
+  * d/control: Update Vcs-* fields with new Debian Python Team Salsa
+    layout.
+
+  [ Michel Le Bihan ]
+  * debian/control
+    - add img2pdf to recommends
+
+ -- Sandro Tosi <morph@debian.org>  Wed, 15 Sep 2021 22:56:34 -0400
+
+pdfarranger (1.6.2-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream version 1.6.2 (Closes: #968866).
+    - Update debian/copyright.
+  * Add missing python3-pkg-resources dep (Closes: #965104).
+  * Bump debhelper from old 12 to 13.
+  * Set Rules-Requires-Root: no.
+
+ -- Tristan Seligmann <mithrandi@debian.org>  Tue, 25 Aug 2020 20:36:12 +0200
+
+pdfarranger (1.4.2-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream version 1.4.2
+    - Drop patches, both have been applied upstream
+  * Depend on python3-gi-cairo.
+    Thanks to Jacob Hallén <jacob@openend.se> (Closes: #954033)
+
+ -- Dr. Tobias Quathamer <toddy@debian.org>  Tue, 17 Mar 2020 14:44:57 +0100
+
+pdfarranger (1.4.1-1) unstable; urgency=medium
+
+  * Team upload.
+
+  [ Dr. Tobias Quathamer ]
+  * New upstream version 1.4.1 (Closes: #943481)
+    - Add two patches for appdata.xml and fix a typo
+  * Depend on python3-pikepdf
+  * Update d/copyright
+  * Update Standards-Version to 4.5.0, no changes needed
+
+  [ Ondřej Nový ]
+  * Bump Standards-Version to 4.4.1.
+
+  [ Debian Janitor ]
+  * Set upstream metadata fields: Bug-Database, Bug-Submit, Repository,
+    Repository-Browse.
+
+ -- Dr. Tobias Quathamer <toddy@debian.org>  Sat, 14 Mar 2020 20:20:02 +0100
+
+pdfarranger (1.1.1-1) unstable; urgency=medium
+
+  * New upstream release
+  * Update debian/copyright (Closes: #917946)
+  * Update app name in package description
+
+ -- Jeremy Bicha <jbicha@debian.org>  Tue, 01 Jan 2019 10:14:18 -0500
+
+pdfarranger (1.1-1) unstable; urgency=medium
+
+  [ Jeremy Bicha ]
+  * Switch to new pdfarranger source, active fork of pdfshuffler
+    (Closes: #917830)
+  * Switch to Python 3 and GTK 3 (Closes: #879034)
+  * Drop all patches: applied in new release
+  * Use debhelper-compat 12 and drop debian/compat
+  * Add transitional package for upgrades from pdfshuffler
+  * Bump Standards-Version to 4.3.0
+
+  [ Ondřej Nový ]
+  * d/copyright: Use https protocol in Format field
+  * d/control: Remove ancient X-Python-Version field
+  * d/watch: Use https protocol
+
+ -- Jeremy Bicha <jbicha@debian.org>  Sun, 30 Dec 2018 15:44:01 -0500
+
+pdfshuffler (0.6.0-8) unstable; urgency=medium
+
+  * Add build-dep on dh-python.
+  * Default to pypdf2 instead of deprecated pypdf. (Closes: #763973, #763976,
+    LP: #656382)
+  * Fix missing UI translations and add Spanish and Catalan translations.
+    (Closes: #756281, LP: #1328862)
+  * Install hi-res scalable svg icon. (Closes: #768306, LP: #1081190)
+  * Add missing MimeType to desktop menu file. (LP: #1334124, LP: #1349140)
+    - Drop duplicate debian/pdfshuffler.desktop.
+  * Update to Standards version 3.9.8.
+    - Drop obsolete debian/menu file.
+
+ -- Vincent Cheng <vcheng@debian.org>  Wed, 25 May 2016 18:26:19 -0700
+
+pdfshuffler (0.6.0-7) unstable; urgency=medium
+
+  * Remove calls to deprecated GDK threading functions altogether.
+
+ -- Jeremy Lainé <jeremy.laine@m4x.org>  Tue, 07 Oct 2014 16:07:58 +0200
+
+pdfshuffler (0.6.0-6) unstable; urgency=medium
+
+  * Fall back to PyPDF2 if pyPdf is not found (Closes: #762083).
+  * Fix "Attempt to unlock mutex that was not locked" error.
+  * Update to Standards version 3.9.6, no changes required.
+  * Add myself to uploaders.
+
+ -- Jeremy Lainé <jeremy.laine@m4x.org>  Sat, 27 Sep 2014 14:41:33 +0200
+
+pdfshuffler (0.6.0-5) unstable; urgency=medium
+
+  * Adopt package. (Closes: #728579)
+  * Remove debian/pdfshuffler.1 and use upstream manpage instead.
+  * Update to Standards version 3.9.5, no changes required.
+  * Update to dh compat level 9.
+  * Update to copyright format 1.0.
+
+ -- Vincent Cheng <vcheng@debian.org>  Thu, 16 Jan 2014 21:31:13 -0800
+
+pdfshuffler (0.6.0-4) unstable; urgency=low
+
+  * Set Maintainer to Debian QA Group <packages@qa.debian.org> and drop
+    Uploaders field.
+  * Drop debian/patches/add-save-button, as upstream doesn't approve it.
+
+ -- Serafeim Zanikolas <sez@debian.org>  Tue, 29 Oct 2013 20:12:47 +0000
+
+pdfshuffler (0.6.0-3) unstable; urgency=low
+
+  * Add copyright to debian/patches/add-save-button
+  * Actually bump Standards-Version
+
+ -- Serafeim Zanikolas <sez@debian.org>  Thu, 17 Oct 2013 21:17:38 +0100
+
+pdfshuffler (0.6.0-2) unstable; urgency=low
+
+  * Apply patch debian/patches/add-save-button to add "Save" option
+    (Closes: #722995).
+  * Bump Standards-Version to 3.9.4 (no changes)
+
+ -- Serafeim Zanikolas <sez@debian.org>  Sun, 06 Oct 2013 16:19:48 +0100
+
+pdfshuffler (0.6.0-1) unstable; urgency=low
+
+  * New Upstream Release
+    - works with poppler 0.18 (Closes: #660937)
+    - drop fix-shebag patch
+  * Add patch for manpage typo (thanks to A. Costa <agcosta@gis.net>;
+    Closes: #650070)
+  * Bump Standards-Version to 3.9.3
+    - convert debian/copyright to DEP5 format
+
+ -- Serafeim Zanikolas <sez@debian.org>  Sun, 29 Apr 2012 01:03:32 +0200
+
+pdfshuffler (0.5.1-2) unstable; urgency=low
+
+  * Migrate to dh_python2
+    - Build-Depends: drop python-support, and require python (>= 2.6.6-3~)
+    - add X-Python-Version in debian/control
+    - debian/rules: invoke dh with python2 addon
+  * Bump Standards-Version to 3.9.2 (no changes)
+  * Add desktop file (thanks to Slavko <linux@slavino.sk>; Closes: #635532)
+  * Fix minor typo in long package description
+
+ -- Serafeim Zanikolas <sez@debian.org>  Mon, 08 Aug 2011 00:09:25 +0200
+
+pdfshuffler (0.5.1-1) unstable; urgency=low
+
+  * New Upstream Release
+  * debian/copyright: update to reflect upstream change to GPLv3
+
+ -- Serafeim Zanikolas <sez@debian.org>  Tue, 15 Feb 2011 00:43:28 +0100
+
+pdfshuffler (0.5-2) unstable; urgency=high
+
+  * Add python and python-support in Build-Depends, and ${python:Depends} in
+    Depends (Closes: #596904; setting urgency=high for RC bug). Thanks to
+    Andrew Starr-Bochicchio <a.starr.b@gmail.com>
+  * Update my email address in debian/control:Maintainer
+  * Bump standards version (no changes)
+
+ -- Serafeim Zanikolas <sez@debian.org>  Wed, 15 Sep 2010 23:33:31 +0200
+
+pdfshuffler (0.5-1) unstable; urgency=low
+
+  * New Upstream Release
+  * Bump Standards-Version to 3.8.4 (no changes)
+  * Switch dpkg-source format to 3.0 (quilt)
+  * Add DEP-3 headers to patches
+
+ -- Serafeim Zanikolas <serzan@hellug.gr>  Sun, 24 Jan 2010 17:04:08 +0100
+
+pdfshuffler (0.4.2-2) unstable; urgency=low
+
+  * Simplify debian/rules.
+  * Correct copyright symbols in copyright file.
+
+ -- Serafeim Zanikolas <serzan@hellug.gr>  Fri, 05 Jun 2009 22:44:44 +0200
+
+pdfshuffler (0.4.2-1) unstable; urgency=low
+
+  * Initial release (Closes: #513003)
+
+ -- Serafeim Zanikolas <serzan@hellug.gr>  Sat, 16 May 2009 23:26:32 +0200

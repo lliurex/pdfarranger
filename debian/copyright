@@ -1,0 +1,58 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: pdfarranger
+Source: https://github.com/pdfarranger/pdfarranger
+
+Files: *
+Copyright: 2008-2017 Konstantinos Poulios
+           2018-2020 Jerome Robert
+License: GPL-3+
+
+Files: debian/*
+Copyright: 2008-2012 Serafeim Zanikolas
+           2014-2016 Vincent Cheng
+License: GPL-3+
+
+Files: data/com.github.jeromerobert.pdfarranger.metainfo.xml
+Copyright: 2014 Richard Hughes
+License: CC0-1.0
+
+License: CC0-1.0
+ Certain owners wish to permanently relinquish those rights to a Work for
+ the purpose of contributing to a commons of creative, cultural and
+ scientific works ("Commons") that the public can reliably and without
+ fear of later claims of infringement build upon, modify, incorporate in
+ other works, reuse and redistribute as freely as possible in any form
+ whatsoever and for any purposes, including without limitation commercial
+ purposes. These owners may contribute to the Commons to promote the
+ ideal of a free culture and the further production of creative, cultural
+ and scientific works, or to gain reputation or greater distribution for
+ their Work in part through the use and efforts of others.
+ .
+ For these and/or other purposes and motivations, and without any
+ expectation of additional consideration or compensation, the person
+ associating CC0 with a Work (the "Affirmer"), to the extent that he or
+ she is an owner of Copyright and Related Rights in the Work, voluntarily
+ elects to apply CC0 to the Work and publicly distribute the Work under
+ its terms, with knowledge of his or her Copyright and Related Rights in
+ the Work and the meaning and intended legal effect of CC0 on those
+ rights.
+ . .
+ The complete text of the Creative Commons 0 1.0 Universal
+ can be found in `/usr/share/common-licenses/CC0-1.0'.
+
+License: GPL-3+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ .
+ This package is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this program. If not, see <http://www.gnu.org/licenses/>.
+ .
+ On Debian systems, the complete text of the GNU General
+ Public License version 3 can be found in "/usr/share/common-licenses/GPL-3".
