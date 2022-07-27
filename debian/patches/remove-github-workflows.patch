@@ -1,0 +1,126 @@
+From: "M.Angel Juan" <m.angel.juan@gmail.com>
+Date: Wed, 27 Jul 2022 11:11:13 +0200
+Subject: remove github workflows
+
+---
+ .github/ISSUE_TEMPLATE/bug_report.md | 43 --------------------------
+ .github/workflows/install.yml        | 60 ------------------------------------
+ 2 files changed, 103 deletions(-)
+ delete mode 100644 .github/ISSUE_TEMPLATE/bug_report.md
+ delete mode 100644 .github/workflows/install.yml
+
+diff --git a/.github/ISSUE_TEMPLATE/bug_report.md b/.github/ISSUE_TEMPLATE/bug_report.md
+deleted file mode 100644
+index f4e7eb3..0000000
+--- a/.github/ISSUE_TEMPLATE/bug_report.md
++++ /dev/null
+@@ -1,43 +0,0 @@
+----
+-name: Bug report
+-about: Create a report to help us improve
+-title: ''
+-labels: ''
+-assignees: ''
+----
+-
+-Describe the bug
+-----------------
+-
+-A clear and concise description of what the bug is.
+-
+-To Reproduce
+-------------
+-
+-Steps to reproduce the behavior:
+-1.  Go to '...'
+-2.  Click on '....'
+-3.  Scroll down to '....'
+-4.  See error
+-
+-Expected behavior
+------------------
+-
+-A clear and concise description of what you expected to happen.
+-
+-Input files
+------------
+-
+-Check if the bug appear only with some PDF or image files. If the bug is specific to some files please attach one to the issue.
+-
+-Screenshots
+------------
+-
+-If applicable, add screenshots to help explain your problem.
+-
+-System and Versions
+--------------------
+-
+--   PDF Arranger version and where you get it (distro package, flatpak, pip, git, download, ...)
+--   pikepdf version and where you get it (distro package, pip, git, ...)
+--   OS name and version (e.g.: Windows 10, Fedora 33, ...)
+diff --git a/.github/workflows/install.yml b/.github/workflows/install.yml
+deleted file mode 100644
+index 6cf1a19..0000000
+--- a/.github/workflows/install.yml
++++ /dev/null
+@@ -1,60 +0,0 @@
+-name: pdfarranger
+-on:
+-  push:
+-    branches: [ main ]
+-  pull_request:
+-jobs:
+-  build:
+-    runs-on: ubuntu-latest
+-    # PikePDF 4.2.0
+-    container: jeromerobert/pdfarranger-docker-ci:1.4
+-    steps:
+-    - uses: actions/checkout@v2
+-    - name: Install
+-      run: pip3 install .[image]
+-    - name: AppStream
+-      run: appstreamcli validate /usr/share/metainfo/com.github.jeromerobert.pdfarranger.metainfo.xml
+-    - name: Validate Desktop File
+-      run: desktop-file-validate /usr/share/applications/com.github.jeromerobert.pdfarranger.desktop
+-    - name: Tests and Coverage
+-      run: python3 -X tracemalloc -u -m unittest discover -v -f -s tests
+-    - name: Codecov
+-      run: curl -s https://codecov.io/bash | bash
+-  build-old-pikepdf:
+-    runs-on: ubuntu-latest
+-    # PikePDF 1.19
+-    container: jeromerobert/pdfarranger-docker-ci:1.3.1
+-    steps:
+-    - uses: actions/checkout@v2
+-    - name: Install
+-      run: pip3 install .[image]
+-    - name: Tests and Coverage
+-      run: python3 -X tracemalloc -u -m unittest discover -v -f -s tests
+-  build-win32:
+-    runs-on: ubuntu-latest
+-    container:
+-      image: jeromerobert/wine-mingw64:1.6.1
+-      options: --user root
+-    steps:
+-    - uses: actions/checkout@v2
+-    - run: ./setup.py build
+-    - run: HOME=/root wine python setup_win32.py bdist_msi
+-    - run: HOME=/root wine python setup_win32.py bdist_zip
+-    - uses: actions/upload-artifact@v2
+-      with:
+-        name: pdfarranger-windows-installer-msi
+-        path: dist/*.msi
+-    - uses: actions/upload-artifact@v2
+-      with:
+-        name: pdfarranger-windows-portable-zip
+-        path: dist/*.zip
+-  rpmbuild:
+-    runs-on: ubuntu-latest
+-    container: dreua/pdfarranger-docker-rpm
+-    steps:
+-    - name: RPM Build
+-      run: /pdfarranger/pdfarranger-build
+-    - uses: actions/upload-artifact@v2
+-      with:
+-        name: pdfarranger-fedora-testbuild
+-        path: /github/home/rpmbuild/**/*.rpm
