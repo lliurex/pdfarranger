@@ -1,0 +1,30 @@
+[Desktop Entry]
+Version=1.0
+Name=PDF Arranger
+Name[hr]=PDF uređivač
+Name[hu]=PDF-rendező
+Name[ko]=PDF 편집기
+Comment=PDF Merging, Rearranging, Splitting, Rotating and Cropping
+Comment[cs]=Program pro sloučení, přeuspořádání, rozdělení, otočení a oříznutí PDF
+Comment[de]=PDFs zusammenfügen, umsortieren, trennen, rotieren und zuschneiden
+Comment[es]=Mezcle, reordene, divida, rote y recorte documentos PDF
+Comment[hr]=Sjedinjavanje, preraspoređivanje, rastavljanje, okretanje i obrezivanje PDF dokumenata
+Comment[hu]=PDF egyesítése, átrendezése, felosztása, elforgatása és körülvágása
+Comment[pt]=Aplicação para juntar, organizar, separar, rodar e recortar ficheiros PDF
+Comment[sk]=Grafický nástroj na manipuláciu s PDF
+Comment[sv]=Slå samman, arrangera om, dela, rotera och beskär PDF filer
+Comment[fi]=Yhdistä, järjestele, jaa, käännä ja rajaa PDF-tiedostoja
+Comment[ko]=PDF 합치기, 재정렬, 나누기, 회전 및 잘라내기
+Type=Application
+Exec=pdfarranger %U
+Icon=com.github.jeromerobert.pdfarranger
+MimeType=application/pdf;application/postscript;application/x-ext-pdf;image/x-bmp;image/bmp;image/gif;image/tiff;image/jp2;image/jpeg;image/jpg;image/png;image/x-icon;image/x-portable-pixmap;image/x-gray;image/x-ico;image/x-png;image/vnd.zbrush.pcx;image/x-pcx;
+Categories=Office;
+Terminal=false
+StartupNotify=false
+Keywords=pdfarranger;pdfshuffler;PDF Shuffler;
+Actions=new-window;
+
+[Desktop Action new-window]
+Name=New Window
+Exec=pdfarranger
