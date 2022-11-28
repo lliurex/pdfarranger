@@ -1,3 +1,9 @@
+pdfarranger (1.8.2-2~lliurex2) focal; urgency=medium
+
+  * Added pdfarranger-pikepdf as depend
+  
+ -- Juan Ramon Pelegrina <juapesai@hotmail.com>  Mon, 28 Nov 2022 07:50:27 +0100
+
 pdfarranger (1.8.2-2~lliurex) focal; urgency=medium
 
   ** SNAPSHOT build @9405406b85508877759b2efd17c0056543f4af8b **
