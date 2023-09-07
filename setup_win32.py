@@ -1,4 +1,4 @@
-VERSION='1.8.2'
+VERSION='1.10.0'
 
 from cx_Freeze import setup, Executable
 import os
@@ -16,8 +16,18 @@ include_files = [
 ]
 
 
+def clean_build():
+    dirs = os.listdir('build')
+    keep = ['mo', 'lib']
+    for d in dirs:
+        if d not in keep:
+            shutil.rmtree(os.path.join('build', d))
+
+
+clean_build()
+
+
 def addfile(relpath, warn_missing=False):
-    global include_files
     f = os.path.join(sys.prefix, relpath)
     if warn_missing and not os.path.isfile(f):
         print("{} cannot be found.".format(f), file=sys.stderr)
@@ -26,9 +36,12 @@ def addfile(relpath, warn_missing=False):
 
 
 def addlocale(name):
+    langs = os.listdir('build/mo')
     for path in glob.glob(os.path.join(sys.prefix,
                                        "share/locale/*/LC_MESSAGES/{}.mo".format(name))):
-        addfile(os.path.relpath(path, sys.prefix))
+        lang = os.path.split(os.path.split(os.path.split(path)[0])[0])[1]
+        if lang in langs:
+            addfile(os.path.relpath(path, sys.prefix))
 
 
 addlocale("gtk30")
@@ -50,6 +63,7 @@ def addicons():
         'actions/media-eject',
         'actions/document-save',
         'actions/document-save-as',
+        'actions/document-open',
         'actions/insert-image',
         'actions/object-rotate-left',
         'actions/object-rotate-right',
@@ -90,15 +104,19 @@ required_dlls = [
     'poppler-glib-8',
     'xml2-2',
     'rsvg-2-2',
+    'handy-1-0',
 ]
 
 for dll in required_dlls:
     fn = 'lib' + dll + '.dll'
     include_files.append((os.path.join(sys.prefix, 'bin', fn), fn))
 
-# zlib1 is first loaded by a DLL located in lib
+# Avoid loading wrong dll: Put the dll where it will be searched for first.
+# (That is the folder from where the dll load request originate)
 include_files.append((os.path.join(sys.prefix, 'bin', 'zlib1.dll'),
                       os.path.join('lib', 'zlib1.dll'),))
+include_files.append((os.path.join(sys.prefix, 'bin', 'libffi-8.dll'),
+                      os.path.join('lib', 'libffi-8.dll'),))
 
 required_gi_namespaces = [
     "Gtk-3.0",
@@ -112,12 +130,15 @@ required_gi_namespaces = [
     "GModule-2.0",
     "Atk-1.0",
     "Poppler-0.18",
-    "HarfBuzz-0.0"
+    "HarfBuzz-0.0",
+    "Handy-1",
+    "freetype2-2.0",
 ]
 
 for ns in required_gi_namespaces:
     addfile("lib/girepository-1.0/{}.typelib".format(ns))
 
+addfile("lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-bmp.dll")
 addfile("lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-svg.dll")
 addfile("lib/gdk-pixbuf-2.0/2.10.0/loaders/libpixbufloader-png.dll")
 addfile("lib/gdk-pixbuf-2.0/2.10.0/loaders.cache")
@@ -142,7 +163,7 @@ build_options = dict(
     packages=['gi', 'packaging', 'pikepdf'],
     excludes=['tkinter', 'test'],
     # manually added to the lib folder
-    bin_excludes=['zlib1.dll'],
+    bin_excludes=['zlib1.dll', 'libffi-8.dll'],
     include_files=include_files,
 )
 
@@ -174,6 +195,9 @@ class bdist_zip(distutils.cmd.Command):
         fullname = self.distribution.get_fullname()
         build_exe.build_exe = os.path.join(build_base, fullname)
         build_exe.run()
+        config_ini = os.path.join(build_exe.build_exe, 'config.ini')
+        f = open(config_ini, 'w')
+        f.close()
         dist_dir = self.get_finalized_command('bdist').dist_dir
         archname = os.path.join(dist_dir, get_target_name('portable'))
         self.make_archive(archname, 'zip', root_dir=build_base, base_dir=fullname)
@@ -185,6 +209,7 @@ setup(name='pdfarranger',
       description='A simple application for PDF Merging, Rearranging, and Splitting',
       options=dict(build_exe=build_options, bdist_msi=msi_options),
       cmdclass={'bdist_zip': bdist_zip},
+      packages=['pdfarranger'],
       executables=[Executable('pdfarranger/__main__.py',
                               base='Win32GUI' if sys.platform == 'win32' else None,
                               targetName='pdfarranger.exe',

@@ -25,7 +25,7 @@ __all__ = [
 
 import sys
 import os
-import errno
+import traceback
 import mimetypes
 import copy
 import pathlib
@@ -41,6 +41,7 @@ from gi.repository import Gtk
 gi.require_version("Poppler", "0.18")
 from gi.repository import Poppler  # for the rendering of pdf pages
 import cairo
+from math import pi
 
 
 try:
@@ -59,7 +60,7 @@ _ = gettext.gettext
 
 
 class Page:
-    def __init__(self, nfile, npage, zoom, copyname, angle, scale, crop, size, basename):
+    def __init__(self, nfile, npage, zoom, copyname, angle, scale, crop, size, basename, layerpages):
         #: The ID (from 1 to n) of the PDF file owning the page
         self.nfile = nfile
         #: The ID (from 1 to n) of the page in its owner PDF document
@@ -69,8 +70,10 @@ class Page:
         self.copyname = copyname
         #: Left, right, top, bottom crop
         self.crop = list(crop)
-        #: width and height
-        self.size = list(size)
+        #: Width and height of the original page
+        self.size_orig = list(size)
+        #: Width and height
+        self.size = list(size) if angle in [0, 180] else list(reversed(size))
         self.angle = angle
         self.thumbnail = None
         self.resample = -1
@@ -79,6 +82,7 @@ class Page:
         self.scale = scale
         #: The name of the original file
         self.basename = basename
+        self.layerpages = list(layerpages)
 
     def description(self):
         shortname = os.path.splitext(self.basename)[0]
@@ -122,31 +126,32 @@ class Page:
             return False
         self.crop = self.rotate_crop(self.crop, rt)
         self.angle = (self.angle + int(angle)) % 360
+        self.size = self.size_orig if self.angle in [0, 180] else list(reversed(self.size_orig))
+        for lp in self.layerpages:
+            lp.rotate(angle)
         return True
+
+    def unmodified(self):
+        u = self.angle == 0 and self.crop == [0]*4 and self.scale == 1 and len(self.layerpages) == 0
+        return u
 
     def serialize(self):
         """Convert to string for copy/past operations."""
-        ts = [self.copyname, self.npage, self.basename, self.angle, self.scale] + list(self.crop)
+        lpdata = [lp.serialize() for lp in self.layerpages]
+        ts = [self.copyname, self.npage, self.basename, self.angle, self.scale]
+        ts += list(self.crop) + list(lpdata)
         return "\n".join([str(v) for v in ts])
 
     def duplicate(self, incl_thumbnail=True):
         r = copy.copy(self)
         r.crop = list(r.crop)
         r.size = list(r.size)
+        r.layerpages = [lp.duplicate() for lp in r.layerpages]
         if incl_thumbnail == False:
             del r.thumbnail  # to save ram
             r.thumbnail = None
-            r.resample = -1
             r.preview = None
         return r
-
-    def set_size(self, size):
-        """set this page size from the Poppler page."""
-        self.size = list(size)
-        rotation = int(self.angle) % 360
-        rotation = round(rotation / 90) * 90
-        if rotation == 90 or rotation == 270:
-            self.size.reverse()
 
     def split(self, vcrops, hcrops):
         """Split this page into a grid and return all but the top-left page."""
@@ -178,6 +183,71 @@ class Page:
         return newpages
 
 
+class LayerPage:
+    """Page added as overlay or underlay on a Page."""
+
+    def __init__(self, nfile, npage, copyname, angle, scale, crop, offset, laypos, size):
+        self.nfile = nfile
+        self.npage = npage
+        self.copyname = copyname
+        self.angle = angle
+        self.scale = scale
+        #: Left, right, top, bottom crop
+        self.crop = crop
+        #: Left, right, top, bottom offset from dest page edges
+        self.offset = offset
+        #: OVERLAY or UNDERLAY
+        self.laypos = laypos
+        #: Width and height of the original page
+        self.size_orig = list(size)
+        #: Width and height
+        self.size = list(size) if angle in [0, 180] else list(reversed(size))
+
+    def width_in_points(self):
+        """Return the page width in PDF points."""
+        return self.scale * self.size[0] * (1 - self.crop[0] - self.crop[1])
+
+    def height_in_points(self):
+        """Return the page height in PDF points."""
+        return self.scale * self.size[1] * (1 - self.crop[2] - self.crop[3])
+
+    @staticmethod
+    def rotate_times(angle):
+        """Convert an angle in degree to a number of 90° rotation (integer)."""
+        return int(round(((-angle) % 360) / 90) % 4)
+
+    @staticmethod
+    def rotate_array(array, rotate_times):
+        """Rotate a given crop or offset array (left, right, top bottom) a number of times."""
+        perm = [0, 2, 1, 3]
+        for __ in range(rotate_times):
+            perm.append(perm.pop(0))
+        perm.insert(1, perm.pop(2))
+        return [array[x] for x in perm]
+
+    def rotate(self, angle):
+        rt = self.rotate_times(angle)
+        if rt == 0:
+            return False
+        self.crop = self.rotate_array(self.crop, rt)
+        self.offset = self.rotate_array(self.offset, rt)
+        self.angle = (self.angle + int(angle)) % 360
+        self.size = self.size_orig if self.angle in [0, 180] else list(reversed(self.size_orig))
+        return True
+
+    def serialize(self):
+        """Convert to string for copy/past operations."""
+        ts = [self.copyname, self.npage, self.angle, self.scale, self.laypos]
+        ts += list(self.crop) + list(self.offset)
+        return "\n".join([str(v) for v in ts])
+
+    def duplicate(self):
+        r = copy.copy(self)
+        r.crop = list(r.crop)
+        r.offset = list(r.offset)
+        return r
+
+
 class PDFDocError(Exception):
     def __init__(self, message):
         self.message = message
@@ -194,9 +264,9 @@ class PasswordDialog(Gtk.Dialog):
             parent=parent,
             flags=Gtk.DialogFlags.MODAL,
             buttons=(
-                Gtk.STOCK_CANCEL,
+                "_Cancel",
                 Gtk.ResponseType.CANCEL,
-                Gtk.STOCK_OK,
+                "_OK",
                 Gtk.ResponseType.OK,
             ),
         )
@@ -229,6 +299,34 @@ class PasswordDialog(Gtk.Dialog):
             raise _UnknownPasswordException()
 
 
+def _img_to_pdf(filename, tmp_dir):
+    """Wrap img2pdf.convert to handle some corner cases"""
+    fd, pdf_file_name = tempfile.mkstemp(suffix=".pdf", dir=tmp_dir)
+    os.close(fd)
+    with open(pdf_file_name, "wb") as f:
+        img = img2pdf.Image.open(filename)
+        if (img.mode == "LA") or (img.mode != "RGBA" and "transparency" in img.info):
+            # TODO: Find a way to keep image in P or L format and remove transparency.
+            # This will work but converting from 1, L, P to RGB is not optimal.
+            img = img.convert("RGBA")
+        if img.mode == "RGBA":
+            bg = img2pdf.Image.new("RGB", img.size, (255, 255, 255))
+            bg.paste(img, mask=img.split()[-1])
+            imgio = img2pdf.BytesIO()
+            bg.save(imgio, "PNG")
+            imgio.seek(0)
+            f.write(img2pdf.convert(imgio))
+        else:
+            try:
+                # Try to handle invalid EXIF rotation
+                rot = img2pdf.Rotation.ifvalid
+            except AttributeError:
+                # img2pdf is too old so we can't support invalid EXIF rotation
+                rot = None
+            f.write(img2pdf.convert(filename, rotation=rot))
+    return pdf_file_name
+
+
 class PDFDoc:
     """Class handling PDF documents."""
 
@@ -249,13 +347,10 @@ class PDFDoc:
                 if not askpass:
                     raise e
 
-    def __init__(self, filename, basename, tmp_dir, parent):
+    def __init__(self, filename, basename, stat, tmp_dir, parent):
         self.render_lock = threading.Lock()
         self.filename = os.path.abspath(filename)
-        try:
-            self.mtime = os.path.getmtime(filename)
-        except OSError as e:
-            raise PDFDocError(e)
+        self.stat = stat
         if basename is None:  # When importing files
             self.basename = os.path.basename(filename)
         else:  # When copy-pasting
@@ -281,27 +376,14 @@ class PDFDoc:
             if not img2pdf:
                 raise PDFDocError(_("Image files are only supported with img2pdf"))
             if mimetypes.guess_type(filename)[0] in img2pdf_supported_img:
-                fd, self.copyname = tempfile.mkstemp(suffix=".pdf", dir=tmp_dir)
-                os.close(fd)
-                with open(self.copyname, "wb") as f:
-                    img = img2pdf.Image.open(filename)
-                    if (img.mode == "LA") or (img.mode != "RGBA" and "transparency" in img.info):
-                        # TODO: Find a way to keep image in P or L format and remove transparency.
-                        # This will work but converting from 1, L, P to RGB is not optimal.
-                        img = img.convert("RGBA")
-                    if img.mode == "RGBA":
-                        bg = img2pdf.Image.new("RGB", img.size, (255, 255, 255))
-                        bg.paste(img, mask=img.split()[-1])
-                        imgio = img2pdf.BytesIO()
-                        bg.save(imgio, "PNG")
-                        imgio.seek(0)
-                        f.write(img2pdf.convert(imgio))
-                    else:
-                        f.write(img2pdf.convert(filename))
+                self.copyname = _img_to_pdf(filename, tmp_dir)
                 uri = pathlib.Path(self.copyname).as_uri()
                 self.document = Poppler.Document.new_from_file(uri, None)
             else:
                 raise PDFDocError(_("Image format is not supported by img2pdf"))
+            if filename.startswith(tmp_dir) and filename.endswith(".png"):
+                os.remove(filename)
+                self.basename = _("Clipboard image")
         else:
             raise PDFDocError(_("File is neither pdf nor image"))
 
@@ -335,55 +417,103 @@ class PageAdder:
         self.before = False
         #: Where to insert pages. If None pages are inserted at the end
         self.treerowref = None
+        self.stat_cache = {}
+        self.content = []
+        self.pdfqueue_used = True
 
     def move(self, treerowref, before):
         """Insert pages at the given location."""
         self.before = before
         self.treerowref = treerowref
 
-    def addpages(self, filename, page=-1, basename=None, angle=0, scale=1.0, crop=None):
-        crop = [0] * 4 if crop is None else crop
+    def get_pdfdoc(self, filename,  basename=None):
+        """Get the pdfdoc object for the filename.
+
+        pdfqueue is searched for the filename. If it is not found a pdfdoc is created
+        and added to pdfqueue.
+        Returns: pdfdoc object, it's file number, if a new pdfdoc was created.
+        """
         pdfdoc = None
         nfile = None
-        # Check if file exists
-        if not os.path.isfile(filename):
-            raise FileNotFoundError(
-                errno.ENOENT, os.strerror(errno.ENOENT), filename)
-
-        # Check if added page or file already exist in pdfqueue
+        doc_added = False
         for i, it_pdfdoc in enumerate(self.app.pdfqueue):
-            if basename is not None and filename == it_pdfdoc.copyname:
-                # File of copy-pasted page was found in pdfqueue
+            if filename == it_pdfdoc.copyname:
+                # File of copy-pasted page was found in pdfqueue.
+                # Files in tmp_dir are never modified by the app and are not expected
+                # to be modified by the user either -> files are equal if names match.
                 pdfdoc = it_pdfdoc
                 nfile = i + 1
                 break
-            elif (os.path.isfile(it_pdfdoc.filename)
-                  and os.path.samefile(filename, it_pdfdoc.filename)
-                  and os.path.getmtime(filename) == it_pdfdoc.mtime):
-                # Imported file was found in pdfqueue
-                pdfdoc = it_pdfdoc
-                nfile = i + 1
-                break
-
-        if not pdfdoc:
+        if pdfdoc is None:
+            if not filename in self.stat_cache:
+                try:
+                    s = os.stat(filename)
+                    self.stat_cache[filename] = s.st_dev, s.st_ino, s.st_mtime
+                except OSError as e:
+                    print(traceback.format_exc())
+                    self.app.error_message_dialog(e)
+                    return None
+            for i, it_pdfdoc in enumerate(self.app.pdfqueue):
+                if self.stat_cache[filename] == it_pdfdoc.stat:
+                    # Imported file was found in pdfqueue
+                    pdfdoc = it_pdfdoc
+                    nfile = i + 1
+                    break
+        if pdfdoc is None:
             try:
-                pdfdoc = PDFDoc(filename, basename, self.app.tmp_dir, self.app.window)
+                pdfdoc = PDFDoc(filename, basename, self.stat_cache[filename],
+                                self.app.tmp_dir, self.app.window)
             except _UnknownPasswordException:
-                return
+                return None
             except PDFDocError as e:
                 print(e.message, file=sys.stderr)
                 self.app.error_message_dialog(e.message)
-                return
-            if pdfdoc.copyname != pdfdoc.filename and basename is None:
-                self.app.import_directory = os.path.split(filename)[0]
-                self.app.export_directory = self.app.import_directory
+                return None
             self.app.pdfqueue.append(pdfdoc)
             nfile = len(self.app.pdfqueue)
+            doc_added = True
+        return pdfdoc, nfile, doc_added
+
+    def get_layerpages(self, layerdata):
+        """Create LayerPage objects from layerdata."""
+        layerpages = []
+        if layerdata is None:
+            return layerpages
+        for filename, npage, angle, scale, laypos, crop, offset in layerdata:
+            doc_data = self.get_pdfdoc(filename)
+            if doc_data is None:
+                return None
+            pdfdoc, nfile, _ = doc_data
+            copyname = pdfdoc.copyname
+            size = pdfdoc.get_page(npage - 1).get_size()
+            ld = nfile, npage, copyname, angle, scale, crop, offset, laypos, size
+            layerpages.append(LayerPage(*ld))
+        return layerpages
+
+    def addpages(self, filename, page=-1, basename=None, angle=0, scale=1.0, crop=None, layerdata=None):
+        crop = [0] * 4 if crop is None else crop
+        c = 'pdf' if page == -1 and os.path.splitext(filename)[1].lower() == '.pdf' else 'other'
+        self.content.append(c)
+        self.pdfqueue_used = len(self.app.pdfqueue) > 0
+
+        doc_data = self.get_pdfdoc(filename, basename)
+        if doc_data is None:
+            return
+        pdfdoc, nfile, doc_added = doc_data
+
+        if (doc_added and pdfdoc.copyname != pdfdoc.filename and basename is None and not
+                (filename.startswith(self.app.tmp_dir) and filename.endswith(".png"))):
+            self.app.import_directory = os.path.split(filename)[0]
+            self.app.export_directory = self.app.import_directory
 
         n_end = pdfdoc.document.get_n_pages()
         n_start = min(n_end, max(1, page))
         if page != -1:
             n_end = max(n_start, min(n_end, page))
+
+        layerpages = self.get_layerpages(layerdata)
+        if layerpages is None:
+            return
 
         for npage in range(n_start, n_end + 1):
             page = pdfdoc.document.get_page(npage - 1)
@@ -398,6 +528,7 @@ class PageAdder:
                     crop,
                     page.get_size(),
                     pdfdoc.basename,
+                    layerpages,
                 )
             )
 
@@ -406,7 +537,9 @@ class PageAdder:
             return False
         if add_to_undomanager:
             self.app.undomanager.commit("Add")
-            self.app.set_unsaved(True)
+            if self.pdfqueue_used or len(self.content) > 1 or self.content[0] != 'pdf':
+                self.app.set_unsaved(True)
+            self.content = []
         with self.app.render_lock():
             for p in self.pages:
                 m = [p, p.description()]
@@ -421,13 +554,30 @@ class PageAdder:
                 if select_added:
                     path = self.app.model.get_path(it)
                     self.app.iconview.select_path(path)
-                self.app.update_geometry(it)
         if add_to_undomanager:
+            self.app.update_iconview_geometry()
             GObject.idle_add(self.app.retitle)
-            self.app.zoom_set(self.app.zoom_level)
+            self.app.update_max_zoom_level()
             self.app.silent_render()
+            self.app.update_statusbar()
+            self.scroll()
         self.pages = []
         return True
+
+    def scroll(self):
+        """Scroll to first added page."""
+        if len(self.app.model) - len(self.pages) == 0:
+            return
+        if self.treerowref:
+            iref = self.treerowref.get_path().get_indices()[0]
+        else:
+            iref = len(self.app.model) - 1 - len(self.pages)
+            self.before = False
+        if self.before:
+            scroll_path = Gtk.TreePath.new_from_indices([max(iref - len(self.pages), 0)])
+        else:
+            scroll_path = Gtk.TreePath.new_from_indices([max(iref + 1, 0)])
+        self.app.iconview.scroll_to_path(scroll_path, False, 0, 0)
 
 
 class PDFRenderer(threading.Thread, GObject.GObject):
@@ -448,7 +598,7 @@ class PDFRenderer(threading.Thread, GObject.GObject):
 
         Thumbnails are rendered for the visible range and its near area. Memory usage is estimated
         and if it goes too high distant thumbnails are replaced with previews. Previews will be
-        rendered for all pages. The preview will exist as long as the page exist.
+        rendered for all pages.
         """
         for num in range(self.visible_start, self.visible_end + 1):
             if self.quit:
@@ -458,10 +608,9 @@ class PDFRenderer(threading.Thread, GObject.GObject):
                     break
                 path = Gtk.TreePath.new_from_indices([num])
                 ref = Gtk.TreeRowReference.new(self.model, path)
-                p = copy.copy(self.model[path][0])
+                p = self.model[path][0].duplicate()
             if p.resample != 1 / p.zoom:
-                scale = p.scale * p.zoom
-                self.update(p, ref, scale, 1 / p.zoom, False)
+                self.update(p, ref, p.zoom, False)
         mem_limit = False
         for off in range(1, len(self.model)):
             for num in self.visible_end + off, self.visible_start - off:
@@ -472,65 +621,111 @@ class PDFRenderer(threading.Thread, GObject.GObject):
                         continue
                     path = Gtk.TreePath.new_from_indices([num])
                     ref = Gtk.TreeRowReference.new(self.model, path)
-                    p = copy.copy(self.model[path][0])
+                    p = self.model[path][0].duplicate()
                 if off <= self.columns_nr * 5:
                     # Thumbnail
-                    scale = p.scale * p.zoom
-                    resample = 1 / p.zoom
+                    zoom = p.zoom
                     is_preview = False
                 elif mem_limit or p.resample < 0:
                     # Preview. Always render to about 4000 pixels = about 16kb
-                    preview_zoom_scale = (1 / p.scale) * (4000 / (p.size[0] * p.size[1])) ** .5
-                    scale = p.scale * preview_zoom_scale
-                    resample = 1 / preview_zoom_scale
+                    zoom = (1 / p.scale) * (4000 / (p.size[0] * p.size[1])) ** .5
                     is_preview = True
                 else:
                     # Thumbnail is distant and total mem usage is small
                     # -> don't update thumbnail, just take memory usage into account
-                    scale = p.scale / p.resample
-                    resample = p.resample
-                mem_limit = self.mem_at_limit(p, scale)
-                if p.resample != resample:
-                    self.update(p, ref, scale, resample, is_preview)
+                    zoom = 1 / p.resample
+                if p.resample != 1 / zoom:
+                    size = self.update(p, ref, zoom, is_preview)
+                else:
+                    size = p.thumbnail.get_width(), p.thumbnail.get_height()
+                mem_limit = self.mem_at_limit(size)
         self.finish()
 
-    def mem_at_limit(self, p, scale):
+    def mem_at_limit(self, size):
         """Estimate memory usage of rendered thumbnails. Return True when mem_usage > mem_limit."""
         mem_limit = 300  # Mb (About. Size will depend on thumbnail content.)
         if self.mem_usage > mem_limit:
             return True
-        pdfdoc = self.pdfqueue[p.nfile - 1]
-        page = pdfdoc.document.get_page(p.npage - 1)
-        w, h = page.get_size()
-        self.mem_usage += w * scale * h * scale * 4 / (1024 * 1024)  # 4 byte/pixel
+        self.mem_usage += size[0] * size[1] * 4 / (1024 * 1024)  # 4 byte/pixel
+        return False
 
-    def update(self, p, ref, scale, resample, is_preview):
-        """Render and emit updated thumbnails."""
+    def render(self, cr, p):
         if self.quit:
             return
-        if is_preview and p.preview:
+        pdfdoc = self.pdfqueue[p.nfile - 1]
+        page = pdfdoc.get_page(p.npage - 1)
+        with pdfdoc.render_lock:
+            page.render(cr)
+
+    def update(self, p, ref, zoom, is_preview):
+        """Render and emit updated thumbnails."""
+        if (is_preview and p.preview) and (p.resample != -1):
+            # Reuse the preview if it exist, unless it is marked for re-render
             thumbnail = p.preview
         else:
-            pdfdoc = self.pdfqueue[p.nfile - 1]
-            page = pdfdoc.get_page(p.npage - 1)
-            w, h = page.get_size()
-            thumbnail = cairo.ImageSurface(
-                cairo.FORMAT_ARGB32, int(0.5 + w * scale), int(0.5 + h * scale)
-            )
+            wpoi = p.size[0] * (1 - p.crop[0] - p.crop[1])
+            hpoi = p.size[1] * (1 - p.crop[2] - p.crop[3])
+            wpix = int(0.5 + wpoi * p.scale * zoom)
+            hpix = int(0.5 + hpoi * p.scale * zoom)
+            wpix0, hpix0 = (wpix, hpix) if p.angle in [0, 180] else (hpix, wpix)
+            rotation = round((int(p.angle) % 360) / 90) * 90
+
+            thumbnail = cairo.ImageSurface(cairo.FORMAT_ARGB32, wpix0, hpix0)
             cr = cairo.Context(thumbnail)
-            cr.scale(int(0.5 + w * scale) / w, int(0.5 + h * scale) / h)
-            with pdfdoc.render_lock:
-                page.render(cr)
+            if rotation > 0:
+                cr.translate(wpix0 / 2, hpix0 / 2)
+                cr.rotate(-rotation * pi / 180)
+                cr.translate(-wpix / 2, -hpix / 2)
+            cr.scale(wpix / wpoi, hpix / hpoi)
+            cr.translate(-p.crop[0] * p.size[0], -p.crop[2] * p.size[1])
+            self.add_layers(cr, p, layer='UNDERLAY')
+            cr.save()
+            if rotation > 0:
+                cr.translate(p.size[0] / 2, p.size[1] / 2)
+                cr.rotate(rotation * pi / 180)
+                cr.translate(-p.size_orig[0] / 2, -p.size_orig[1] / 2)
+            self.render(cr, p)
+            cr.restore()
+            self.add_layers(cr, p, layer='OVERLAY')
+        if self.quit:
+            return 0, 0
+
         GObject.idle_add(
             self.emit,
             "update_thumbnail",
             ref,
             thumbnail,
-            resample,
+            zoom,
             p.scale,
             is_preview,
             priority=GObject.PRIORITY_LOW,
         )
+        return thumbnail.get_width(), thumbnail.get_height()
+
+    def add_layers(self, cr, p, layer):
+        layerpages = p.layerpages if layer == 'OVERLAY' else reversed(p.layerpages)
+        for lp in layerpages:
+            if self.quit:
+                return
+            if layer != lp.laypos:
+                continue
+            cr.save()
+            cr.translate(p.size[0] * lp.offset[0], p.size[1] * lp.offset[2])
+            cr.scale(lp.scale / p.scale, lp.scale / p.scale)
+            x = lp.size[0] * lp.crop[0]
+            y = lp.size[1] * lp.crop[2]
+            w = lp.size[0] * (1 - lp.crop[0] - lp.crop[1])
+            h = lp.size[1] * (1 - lp.crop[2] - lp.crop[3])
+            cr.translate(-x, -y)
+            cr.rectangle(x, y, w, h)
+            cr.clip()
+            rotation = round((int(lp.angle) % 360) / 90) * 90
+            if rotation > 0:
+                cr.translate(lp.size[0] / 2, lp.size[1] / 2)
+                cr.rotate(rotation * pi / 180)
+                cr.translate(-lp.size_orig[0] / 2, -lp.size_orig[1] / 2)
+            self.render(cr, lp)
+            cr.restore()
 
     def finish(self):
         """Signal rendering ended (for statusbar and malloc_trim)."""

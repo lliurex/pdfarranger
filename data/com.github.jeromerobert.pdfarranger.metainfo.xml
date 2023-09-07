@@ -9,21 +9,37 @@ See file COPYING or go to <http://www.gnu.org/licenses/> for full license detail
   <id>com.github.jeromerobert.pdfarranger</id>
   <name>PDF Arranger</name>
   <name xml:lang="ko">PDF 편집기</name>
+  <name xml:lang="hr">PDF uređivač</name>
   <name xml:lang="hu">PDF-rendező</name>
+  <name xml:lang="id">Penyusun PDF</name>
+  <name xml:lang="tr">PDF Düzenleyici</name>
+  <name xml:lang="ca">Arranjador de PDF</name>
   <summary>PDF Merging, Rearranging, Splitting, Rotating and Cropping</summary>
+  <summary xml:lang="ca">Fusionador, arranjador, divisor, rotador i retallador de PDF</summary>
   <summary xml:lang="cs">Program pro sloučení, přeuspořádání, rozdělení, otočení a oříznutí PDF</summary>
   <summary xml:lang="de">PDFs zusammenfügen, umsortieren, trennen, rotieren und zuschneiden</summary>
+  <summary xml:lang="el">Συγχώνευση, αναδιάταξη, διαχωρισμός, περιστροφή και περικοπή αρχείων PDF</summary>
   <summary xml:lang="es">Mezcle, reordene, divida, rote y recorte documentos PDF</summary>
   <summary xml:lang="fi">Yhdistä, järjestele, jaa, käännä ja rajaa PDF-tiedostoja</summary>
+  <summary xml:lang="fr">Fusionner, réorganiser, découper, pivoter et recadrer des documents PDF</summary>
   <summary xml:lang="hr">Sjedinjavanje, preraspoređivanje, rastavljanje, okretanje i obrezivanje PDF dokumenata</summary>
   <summary xml:lang="hu">PDF egyesítése, átrendezése, felosztása, elforgatása és körülvágása</summary>
+  <summary xml:lang="id">Menggabungkan, Mengatur ulang, Memisahkan, Memutar, dan Memangkas file PDF</summary>
+  <summary xml:lang="nl">Een programma voor het samenvoegen, herordenen, opsplitsen, draaien en bijsnijden van pdf-bestanden</summary>
+  <summary xml:lang="is">Forrit til að sameina, endurraða, skipta upp, snúa og skera utan af síðum í PDF-skjölum</summary>
   <summary xml:lang="pt">Aplicação para juntar, organizar, separar, rodar e recortar ficheiros PDF</summary>
+  <summary xml:lang="ru">Приложение для объединения, изменения порядка страниц, разделения, вращение и обрезки документов PDF</summary>
   <summary xml:lang="sk">Grafický nástroj na manipuláciu s PDF</summary>
   <summary xml:lang="sv">Slå samman, arrangera om, dela, rotera och beskär PDF filer</summary>
   <summary xml:lang="ko">PDF를 합치기, 재정렬, 나누기, 회전하거나 잘라내기</summary>
+  <summary xml:lang="tr">PDF Birleştirme, Yeniden Düzenleme, Bölme, Döndürme ve Kırpma</summary>
+  <summary xml:lang="uk">Додаток для об'єднання, зміни порядку сторінок, розділу, обертання та обрізання PDF документів</summary>
   <launchable type="desktop-id">com.github.jeromerobert.pdfarranger.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <content_rating type="oars-1.1"/>
+  <categories>
+    <category>Office</category>
+  </categories>
   <description>
     <p>
       PDF Arranger is a small application, which helps the user to merge or split pdf
@@ -34,6 +50,49 @@ See file COPYING or go to <http://www.gnu.org/licenses/> for full license detail
       It is a frontend for pikepdf.
     </p>
 
+    <p xml:lang="ca">
+      El PDF Arranger és una aplicació petita, que ajuda l'usuari a fusionar o dividir els
+      documents PDF i girar, escapçar i reorganitza les seves pàgines utilitzant una
+      interfície interactiva, gràfica i intuïtiva.
+    </p>
+    <p xml:lang="ca">
+        És una interfície per pikepdf.
+    </p>
+
+    <p xml:lang="el">
+      Το PDF Arranger είναι μια μικρή εφαρμογή, που βοηθά τον χρήστη να συγχωνεύσει η
+      να διαχωρίσει αρχεία τύπου PDF και να περιστρέψει, περικόψει η αναδιατάξει τις
+      σελίδες τους χρησιμοποιώντας ένα διαδραστικό και διαισθητικό γραφικό περιβάλλον.
+    </p>
+    <p xml:lang="el">
+      Είναι ένα γραφικό περιβάλλον για το pikepdf.
+    </p>
+
+    <p xml:lang="es">
+      PDF Arranger es una pequeña aplicación que ayuda al usuario a fusionar o dividir
+      documentos pdf y rotar, recortar y reorganizar sus páginas usando una interfaz
+      gráfica interactiva e intuitiva.
+    </p>
+    <p xml:lang="es">
+      Es una interfaz para pikepdf.
+    </p>
+
+    <p xml:lang="fr">
+      PDF Arranger est une petite application qui aide l’utilisateur à fusionner ou découper des documents PDF et pivoter, recadrer et réarranger leurs pages en utilisant une interface graphique intuitive.
+    </p>
+    <p xml:lang="fr">
+      Il s’agit d’une interface pour pikepdf.
+    </p>
+
+    <p xml:lang="hr">
+      PDF uređivač je mali program koja pomaže korisniku sjediniti ili rastaviti
+      pdf dokumente te okretati, obrezati i preurediti stranice tih dokumenata pomoću
+      interaktivnog i intuitivnog grafičkog sučelja.
+     </p>
+     <p xml:lang="hr">
+       Radi se o sučelju za pikepdf.
+     </p>
+
     <p xml:lang="hu">
       A PDF-rendező egy kis alkalmazás, amely egy interaktív és intuitív grafikus 
       felület segítségével segíti a felhasználót a pdf dokumentumok egyesítésében 
@@ -43,23 +102,83 @@ See file COPYING or go to <http://www.gnu.org/licenses/> for full license detail
     <p xml:lang="hu">
       Ez a pikepdf kezelőfelülete.
     </p>
-    
+
+    <p xml:lang="id">
+      PDF Arranger adalah aplikasi kecil yang membantu pengguna untuk menggabungkan atau memisahkan dokumen PDF 
+      serta memutar, mencrop, dan mengatur ulang halaman-halaman menggunakan antarmuka grafis yang interaktif dan intuitif.
+    </p>
+    <p xml:lang="id">
+      Ini adalah antarmuka pengguna (frontend) untuk pikepdf.
+    </p>
+
+    <p xml:lang="is">
+      PDF Arranger er lítið forrit sem hjálpar notendum að sameina eða skipta upp PDF-skjölum, auk þess að hægt er að endurraða, skera utan af eða snúa stökum síðum í þeim með einföldu gagnvirku viðmóti.
+    </p>
+    <p xml:lang="is">
+      Þetta er viðmót fyrir pikepdf.
+    </p>
+
     <p xml:lang="ko">
       PDF 편집기는 사용자가 PDF 문서를 합치거나 나누고 페이지를 재정렬할 수 있는 다기능 그래픽 인터페이스를 사용하는 간단한 프로그램입니다.
     </p>
     <p xml:lang="ko">
       pikepdf를 기반으로 합니다.
     </p>
+
+    <p xml:lang="pt">
+      O PDF Arranger é uma pequena aplicação, que ajuda o utilizador a juntar ou dividir
+      documentos pdf e a rodar, recortar e reorganizar as suas páginas usando uma
+      interface gráfica interativa e intuitiva.
+    </p>
+    <p xml:lang="pt">
+      É uma interface gráfica para o pikepdf.
+    </p>
+
+    <p xml:lang="nl">
+      PDF Arranger is een klein programma waarmee pdf-bestanden kunnen worden gedraaid,
+      bijgesneden, opgesplitst en pagina's worden herordend, allemaal vanuit een intuïtief,
+      grafisch venster.
+    </p>
+    <p xml:lang="nl">
+      Het is een frontend voor pikepdf.
+    </p>
+
+        <p xml:lang="ru">
+      PDF Arranger - это небольшое python-gtk приложение, которое помогает пользователю
+      объединять или разделять документы PDF, а также вращать, обрезать и изменять порядок
+      страниц с помощью интерактивного и интуитивно понятного графического интерфейса.
+    </p>
+    <p xml:lang="ru">
+      Это клиентский интерфейс для pikepdf.
+    </p>
+
+    <p xml:lang="tr">
+      PDF Arranger, kullanıcının etkileşimli ve sezgisel bir grafiksel arayüz kullanarak
+      PDF belgelerini birleştirmesine veya bölmesine ve sayfalarını döndürmesine,
+      kırpmasına ve yeniden düzenlemesine yardımcı olan küçük bir uygulamadır.
+    </p>
+    <p xml:lang="tr">
+      pikepdf için bir önyüzdür.
+    </p>
+    <p xml:lang="uk">
+      PDF Arranger це маленький python-gtk додаток, який допоможе користувачу зливати разом
+      або розділяти pdf документи і перегортати, обрізати і переставляти місцями сторінки за
+      допомогою інтерактивного і інтуітивного графічного інтерфейсу.
+    </p>
+    <p xml:lang="uk">
+      Це графічна оболонка для pikepdf.
+    </p>
   </description>
-  <url type="homepage">https://github.com/pdfarranger/pdfarranger</url>
   <screenshots>
     <screenshot type="default">
       <image>https://github.com/pdfarranger/pdfarranger/raw/main/data/screenshot.png</image>
       <caption/>
     </screenshot>
   </screenshots>
-  <update_contact>jeromerobert@gmx.com</update_contact>
   <releases>
+    <release date="2022-11-27" version="1.9.2"/>
+    <release date="2022-09-24" version="1.9.1"/>
+    <release date="2022-09-17" version="1.9.0"/>
     <release date="2021-12-25" version="1.8.2"/>
     <release date="2021-12-10" version="1.8.1"/>
     <release date="2021-11-13" version="1.8.0"/>
@@ -77,5 +196,16 @@ See file COPYING or go to <http://www.gnu.org/licenses/> for full license detail
     <release date="2020-01-26" version="1.4.0"/>
   </releases>
   <project_license>GPL-3.0-or-later</project_license>
+  <url type="homepage">https://github.com/pdfarranger/pdfarranger</url>
   <url type="bugtracker">https://github.com/pdfarranger/pdfarranger/issues</url>
+  <url type="help">https://github.com/pdfarranger/pdfarranger/discussions</url>
+  <url type="translate">https://github.com/pdfarranger/pdfarranger#for-translators</url>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>touch</control>
+  </supports>
+  <requires>
+    <display_length compare="ge">520</display_length>
+  </requires>
 </component>
