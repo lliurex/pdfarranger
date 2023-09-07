@@ -7,7 +7,7 @@ import tempfile
 import shutil
 
 """
-Thoses tests are using Dogtail https://gitlab.com/dogtail/dogtail
+Those tests are using Dogtail https://gitlab.com/dogtail/dogtail
 
 Other tools using dogtail where you can get example on how to use it:
 
@@ -29,7 +29,7 @@ treeview.keyCombo('<ctrl>L')
 treeview.typeText('qpdf-manual.pdf')
 filechooser.button('Open').click()
 
-You may need to run the following commands to run thoses tests in your current session instead of Xvfb:
+You may need to run the following commands to run those tests in your current session instead of Xvfb:
 
 * /usr/libexec/at-spi-bus-launcher --launch-immediately
 * setxkbmap -v fr
@@ -51,6 +51,16 @@ def group(title):
 def endgroup():
     if "GITHUB_ACTIONS" in os.environ:
         print("::endgroup::")
+
+
+def check_img2pdf(version):
+    try:
+        import img2pdf
+        v = [int(x) for x in img2pdf.__version__.split(".")]
+        r = v >= version
+    except Exception:
+        r = False
+    return r
 
 
 class XvfbManager:
@@ -112,12 +122,12 @@ dogtail_manager = DogtailManager()
 
 
 class PdfArrangerManager:
-    def __init__(self, args=None, coverage=True):
+    def __init__(self, args=None):
         self.process = None
         args = [] if args is None else args
         cmd = [sys.executable, "-u", "-X", "tracemalloc"]
-        if coverage:
-            cmd = cmd + ["-m", "coverage", "run", "-a"]
+        if "PDFARRANGER_COVERAGE" in os.environ:
+            cmd = cmd + ["-m", "coverage", "run", "--concurrency=thread,multiprocessing", "-a"]
         self.process = subprocess.Popen(cmd + ["-m", "pdfarranger"] + args)
 
     def kill(self):
@@ -160,25 +170,41 @@ class PdfArrangerTest(unittest.TestCase):
             self.assertLess(c, 30)
             c += 1
 
+    def _is_saving(self):
+        app = self._app()
+        from dogtail import predicate
+        allstatusbar = app.findChildren(predicate.GenericPredicate(roleName="status bar"), showingOnly=False)
+        statusbar = allstatusbar[0]
+        return statusbar.name.startswith("Saving")
+
+    def _wait_saving(self):
+        # When saving the main window is made unresponsive. When saving end
+        # it's made responsive again. We must be sure that it's responsive
+        # before continuing test else clicks may fail.
+        self._wait_cond(lambda: not self._is_saving())
+
     def _status_text(self):
         app = self._app()
         from dogtail import predicate
         allstatusbar = app.findChildren(predicate.GenericPredicate(roleName="status bar"), showingOnly=False)
-        # If we have multiple status bar, concider the last one as the one who display the selection
+        # If we have multiple status bar, consider the last one as the one who display the selection
         statusbar = allstatusbar[-1]
         return statusbar.name
 
     def _assert_selected(self, selection):
         self.assertTrue(self._status_text().startswith("Selected pages: " + selection))
 
-    def _assert_page_size(self, width, height):
+    def _assert_page_size(self, width, height, pageid=None):
+        if pageid is not None:
+            self._icons()[pageid].click()
+            self._wait_cond(lambda: self._status_text().startswith(f"Selected pages: {pageid+1}"))
         label = " {:.1f}mm \u00D7 {:.1f}mm".format(width, height)
         self.assertTrue(self._status_text().endswith("Page Size:" + label))
 
     def _icons(self):
         """Return the list of page icons"""
         from dogtail import predicate
-        viewport = self._app().child(roleName="viewport")
+        viewport = self._app().child(roleName="layered pane")
         return viewport.findChildren(predicate.GenericPredicate(roleName="icon"), showingOnly=False)
 
     def _popupmenu(self, page, action):
@@ -207,6 +233,42 @@ class PdfArrangerTest(unittest.TestCase):
         self._wait_cond(lambda: ob.sensitive)
         ob.click()
         return filechooser
+
+    def _save_as_chooser(self, filebasename, expected=None):
+        """
+        Fill and validate a Save As file chooser.
+        The file chooser is supposed to be already open.
+        """
+        if expected is None:
+            expected = [filebasename]
+        filechooser = self._app().child(roleName="file chooser")
+        tmp = self.__class__.tmp
+        filename = os.path.join(tmp, filebasename)
+        filechooser.child(roleName="text").text = filename
+        saveb = filechooser.button("Save")
+        self._wait_cond(lambda: saveb.sensitive)
+        filechooser.button("Save").click()
+        # Check files have been created
+        for e in expected:
+            self._wait_cond(lambda: os.path.isfile(os.path.join(tmp, e)))
+        self._wait_cond(lambda: filechooser.dead)
+        self._wait_saving()
+
+    def _scale_selected(self, scale):
+        app = self._app()
+        app.keyCombo("C")
+        dialog = app.child(roleName="dialog")
+        from dogtail import rawinput
+        rawinput.keyCombo("Tab")
+        rawinput.typeText(str(scale))
+        dialog.child(name="OK").click()
+        self._wait_cond(lambda: dialog.dead)
+
+    def _quit_without_saving(self):
+        self._app().child(roleName="layered pane").keyCombo("<ctrl>q")
+        dialog = self._app().child(roleName="alert")
+        dialog.child(name="Don’t Save").click()
+        self._process().wait(timeout=22)
 
     @classmethod
     def setUpClass(cls):
@@ -297,7 +359,7 @@ class TestBatch1(PdfArrangerTest):
     def test_06_page_format(self):
         self._popupmenu(0, ["Select", "Select Odd Pages"])
         self._assert_selected("1, 3, 5, 7")
-        self._popupmenu(0, "Page Format")
+        self._popupmenu(0, "Page Format…")
         dialog = self._app().child(roleName="dialog")
         croppanel = dialog.child(name="Crop Margins")
         from dogtail import predicate
@@ -319,7 +381,7 @@ class TestBatch1(PdfArrangerTest):
         lbefore = len(self._icons())
         self._popupmenu(0, ["Select", "Select Even Pages"])
         self._assert_selected("2, 4, 6, 8")
-        self._mainmenu(["Edit", "Split Pages"])
+        self._mainmenu(["Edit", "Split Pages…"])
         dialog = self._app().child(roleName="dialog")
         dialog.child(name="OK").click()
         self._wait_cond(lambda: dialog.dead)
@@ -329,17 +391,14 @@ class TestBatch1(PdfArrangerTest):
         self._app().child(roleName="layered pane").keyCombo("Home")
         self._assert_selected("1")
         self._app().keyCombo("f")
+        for __ in range(2):
+            self._app().keyCombo("minus")
+        # Zoom level is now 0 and that's what will be saved to config.ini and
+        # used by next batches
 
     def test_09_save_as(self):
         self._mainmenu("Save")
-        filechooser = self._app().child(roleName="file chooser")
-        tmp = self.__class__.tmp
-        filename = os.path.join(tmp, "foobar.pdf")
-        filechooser.child(roleName="text").text = filename
-        saveb = filechooser.button("Save")
-        self._wait_cond(lambda: saveb.sensitive)
-        filechooser.button("Save").click()
-        self._wait_cond(lambda: os.path.isfile(filename))
+        self._save_as_chooser("foobar.pdf")
 
     def test_10_reverse(self):
         self._popupmenu(0, ["Select", "Same Page Format"])
@@ -353,6 +412,7 @@ class TestBatch1(PdfArrangerTest):
         dialog = self._app().child(roleName="alert")
         dialog.child(name="Cancel").click()
         self._app().keyCombo("<ctrl>s")
+        self._wait_saving()
         self._app().keyCombo("<ctrl>q")
         # check that process actually exit
         self._process().wait(timeout=22)
@@ -372,15 +432,9 @@ class TestBatch2(PdfArrangerTest):
 
     def test_04_export(self):
         self._mainmenu(["Export", "Export All Pages to Individual Files…"])
-        filechooser = self._app().child(roleName="file chooser")
-        tmp = self.__class__.tmp
-        filename = os.path.join(tmp, "alltosingle.pdf")
-        filename2 = os.path.join(tmp, "alltosingle2.pdf")
-        filechooser.child(roleName="text").text = filename
-        saveb = filechooser.button("Save")
-        self._wait_cond(lambda: saveb.sensitive)
-        filechooser.button("Save").click()
-        self._wait_cond(lambda: os.path.isfile(filename) and os.path.isfile(filename2))
+        self._save_as_chooser(
+            "alltosingle.pdf", ["alltosingle.pdf", "alltosingle-002.pdf"]
+        )
 
     def test_05_clear(self):
         self._popupmenu(1, "Delete")
@@ -401,6 +455,7 @@ class TestBatch2(PdfArrangerTest):
 
 
 class TestBatch3(PdfArrangerTest):
+    """Test encryption"""
     def test_01_open_encrypted(self):
         filename = os.path.join(self.__class__.tmp, "other_encrypted.pdf")
         shutil.copyfile("tests/test_encrypted.pdf", filename)
@@ -418,13 +473,15 @@ class TestBatch3(PdfArrangerTest):
         passfield.text = "wrong"
         dialog.child(name="OK").click()
         dialog = self._app().child(roleName="dialog")
-        passfield = dialog.child(roleName="password text")
         dialog.child(name="Cancel").click()
         self._wait_cond(lambda: dialog.dead)
         self._wait_cond(lambda: filechooser.dead)
         self.assertEqual(len(self._icons()), 2)
 
     def test_03_quit(self):
+        app = self._app()
+        app.keyCombo("<ctrl>z")  # undo
+        app.keyCombo("<ctrl>y")  # redo
         self._app().child(roleName="layered pane").keyCombo("<ctrl>q")
         dialog = self._app().child(roleName="alert")
         dialog.child(name="Save").click()
@@ -437,8 +494,7 @@ class TestBatch3(PdfArrangerTest):
 
 
 class TestBatch4(PdfArrangerTest):
-    # Kill X11 after that batch
-    LAST=True
+    """Check the size of duplicated and scaled pages"""
     def test_01_import_pdf(self):
         self._start(["tests/test.pdf"])
 
@@ -449,15 +505,8 @@ class TestBatch4(PdfArrangerTest):
         app.keyCombo("Right")
 
     def test_03_scale(self):
-        app = self._app()
-        app.keyCombo("C")
-        dialog = self._app().child(roleName="dialog")
-        from dogtail import rawinput
-        rawinput.keyCombo("Tab")
-        rawinput.typeText("200")
-        dialog.child(name="OK").click()
-        self._wait_cond(lambda: dialog.dead)
-        app.keyCombo("<ctrl>Left")  # rotate left
+        self._scale_selected(200)
+        self._app().keyCombo("<ctrl>Left")  # rotate left
         self._assert_selected("2")
         self._assert_page_size(558.8, 431.8)
 
@@ -465,14 +514,7 @@ class TestBatch4(PdfArrangerTest):
         app = self._app()
         app.keyCombo("<ctrl>a")  # select all
         self._mainmenu(["Export", "Export Selection to a Single File…"])
-        filechooser = self._app().child(roleName="file chooser")
-        tmp = self.__class__.tmp
-        filename = os.path.join(tmp, "scaled.pdf")
-        filechooser.child(roleName="text").text = filename
-        saveb = filechooser.button("Save")
-        self._wait_cond(lambda: saveb.sensitive)
-        filechooser.button("Save").click()
-        self._wait_cond(lambda: os.path.isfile(filename))
+        self._save_as_chooser("scaled.pdf")
         self._popupmenu(1, "Delete")
 
     def test_05_import(self):
@@ -486,3 +528,47 @@ class TestBatch4(PdfArrangerTest):
         app.keyCombo("Right")
         self._assert_selected("2")
         self._assert_page_size(558.8, 431.8)
+        self._quit_without_saving()
+
+
+class TestBatch5(PdfArrangerTest):
+    """Test booklet and blank pages"""
+    # Kill X11 after that batch
+    LAST = True
+
+    def test_01_import_pdf(self):
+        self._start(["tests/test.pdf"])
+
+    def test_02_blank_page(self):
+        self._popupmenu(0, ["Select", "Select All"])
+        self._popupmenu(0, ["Crop White Borders"])
+        self._scale_selected(150)
+        self._popupmenu(0, ["Insert Blank Page…"])
+        dialog = self._app().child(roleName="dialog")
+        dialog.child(name="OK").click()
+        self._wait_cond(lambda: len(self._icons()) == 3)
+
+    def test_03_booklet(self):
+        self._popupmenu(0, ["Select", "Select All"])
+        self._popupmenu(0, ["Generate Booklet"])
+        self._wait_cond(lambda: len(self._icons()) == 2)
+        self._assert_page_size(489, 212.2, 0)
+        self._assert_page_size(489, 212.2, 1)
+
+    def test_04_crop_white_border(self):
+        self._popupmenu(0, ["Select", "Select All"])
+        self._popupmenu(0, ["Crop White Borders"])
+        self._assert_page_size(244.1, 211.8, 0)
+        self._assert_page_size(244.1, 211.8, 1)
+
+    def test_05_buggy_exif(self):
+        """Test img2pdf import with buggy EXIF rotation"""
+        if not check_img2pdf([0,4,2]):
+            print("Ignoring test_05_buggy_exif, img2pdf too old")
+            return
+        filechooser = self._import_file("tests/1x1.jpg")
+        self._wait_cond(lambda: filechooser.dead)
+        self.assertEqual(len(self._icons()), 3)
+
+    def test_06_quit(self):
+        self._quit_without_saving()
