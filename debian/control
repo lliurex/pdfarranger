@@ -29,7 +29,6 @@ Depends: ${misc:Depends},
          python3-gi-cairo,
          python3-pikepdf,
          python3-pkg-resources,
-	 pdfarranger-pikepdf
 Recommends: python3-img2pdf
 Description: merge, split and re-arrange pages from PDF documents
  PDF Arranger is a small application which allows one to merge or split pdf
